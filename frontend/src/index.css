@@ -168,3 +168,195 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   .map-footer { gap: 15px; }
   .page-footer { flex-direction: column; }
 }
+
+/* ==========================================================================
+   NAVIGATION TABS & PORTAL STYLES
+   ========================================================================== */
+.nav-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9px;
+  border: 1px solid #28372a;
+  background: #141f16;
+  color: #9cb19a;
+  transition: all 0.18s ease;
+}
+
+.nav-tab-btn:hover {
+  background: #1d2a1f;
+  color: #edf3e9;
+  border-color: #3b503d;
+}
+
+.nav-tab-btn.active {
+  background: #243525;
+  color: #b3e875;
+  border-color: #557850;
+  box-shadow: 0 0 12px rgba(179, 232, 117, 0.15);
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-family: "DM Mono", monospace;
+  font-weight: 800;
+  border-radius: 99px;
+}
+
+.tab-badge.alert-badge {
+  background: #7a2214;
+  color: #ffb8aa;
+  border: 1px solid #c93b20;
+  animation: pulse 1.5s infinite;
+}
+
+.tab-badge.deal-badge {
+  background: #6e390c;
+  color: #ffcf96;
+  border: 1px solid #d46b19;
+}
+
+.driver-alert-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: "DM Mono", monospace;
+  border-radius: 8px;
+  border: 1px solid #852a1b;
+  background: #3a1510;
+  color: #f7a594;
+  transition: all 0.2s ease;
+}
+
+.driver-alert-trigger-btn:hover {
+  background: #541d16;
+  color: #fff;
+  border-color: #c93b20;
+}
+
+.disruption-alert-card {
+  backdrop-filter: blur(8px);
+}
+
+.truck-card {
+  backdrop-filter: blur(8px);
+}
+
+/* ==========================================================================
+   OSRM MULTI-ROUTE EVALUATION BOX & TRUCK ANIMATION
+   ========================================================================== */
+@keyframes truckPing {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.osrm-routes-legend-box {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 500;
+  width: 250px;
+  background: rgba(16, 24, 18, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid #2b3d2e;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  font-family: "Manrope", sans-serif;
+}
+
+.legend-box-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #d1dacd;
+  font-family: "DM Mono", monospace;
+  padding-bottom: 7px;
+  border-bottom: 1px solid #28372b;
+  margin-bottom: 8px;
+}
+
+.legend-routes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.route-choice-card {
+  padding: 7px 9px;
+  border-radius: 8px;
+  border: 1px solid #28382a;
+  background: #141f16;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.route-choice-card:hover {
+  background: #1d2c1f;
+  border-color: #3b503d;
+}
+
+.route-choice-card.active-route {
+  border-color: #00f5a0;
+  background: #192b1e;
+  box-shadow: 0 0 10px rgba(0, 245, 160, 0.2);
+}
+
+.route-choice-card.winner-route {
+  border-color: #00f5a0;
+}
+
+.route-choice-badge {
+  font-size: 9px;
+  font-weight: 800;
+  font-family: "DM Mono", monospace;
+  color: #00f5a0;
+}
+
+.route-choice-card:not(.winner-route) .route-choice-badge {
+  color: #9ca3af;
+}
+
+.route-freshness-pill {
+  font-size: 9px;
+  font-weight: 700;
+  font-family: "DM Mono", monospace;
+  color: #b3e875;
+  background: rgba(179, 232, 117, 0.12);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.route-choice-stats {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  color: #8c9c8a;
+  font-family: "DM Mono", monospace;
+}
+
+.legend-judges-note {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #28372b;
+  font-size: 8px;
+  color: #839482;
+  font-family: "DM Mono", monospace;
+  line-height: 1.3;
+}
+

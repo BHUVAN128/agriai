@@ -1,27 +1,58 @@
 {
   "farms": [
-    {"id": "farm_pune", "name": "Green Valley Farm", "lat": 18.5204, "lon": 73.8567}
+    {"id": "farm_perambalur_valley", "name": "Perambalur Agro Valley", "lat": 11.2342, "lon": 78.8820},
+    {"id": "farm_chettikulam", "name": "Chettikulam Organic Fields", "lat": 11.1524, "lon": 78.7521},
+    {"id": "farm_veppanthattai", "name": "Veppanthattai Agro Fields", "lat": 11.3210, "lon": 78.9324},
+    {"id": "farm_pune", "name": "Green Valley Farm (Pune)", "lat": 18.5204, "lon": 73.8567}
   ],
   "markets": [
+    {"id": "market_perambalur_mandi", "name": "Perambalur Uzhavar Sandhai", "lat": 11.2380, "lon": 78.8750, "type": "wholesale"},
+    {"id": "market_ariyalur_mandi", "name": "Ariyalur Wholesale Mandi", "lat": 11.1401, "lon": 79.0786, "type": "wholesale"},
     {"id": "market_pune", "name": "Pune Wholesale Market", "lat": 18.5018, "lon": 73.8636, "type": "wholesale"},
     {"id": "market_nashik", "name": "Nashik Produce Mandi", "lat": 19.9975, "lon": 73.7898, "type": "wholesale"},
     {"id": "market_satara", "name": "Satara Fresh Market", "lat": 17.6805, "lon": 74.0183, "type": "wholesale"}
   ],
   "cold_storages": [
+    {"id": "cold_perambalur", "name": "Perambalur Central Cold Chain", "lat": 11.2450, "lon": 78.8690, "type": "cold_storage"},
     {"id": "cold_pimpri", "name": "Pimpri Cold Storage", "lat": 18.6298, "lon": 73.7997, "type": "cold_storage"},
     {"id": "cold_khed", "name": "Khed Agro Cold Chain", "lat": 18.8433, "lon": 73.8910, "type": "cold_storage"},
     {"id": "cold_sangamner", "name": "Sangamner Cold Hub", "lat": 19.5674, "lon": 74.2115, "type": "cold_storage"}
   ],
   "waypoints": [
+    {"id": "Node_P1", "name": "NH-38 Bypass Junction", "lat": 11.2210, "lon": 78.8650, "type": "checkpoint"},
+    {"id": "Node_P2", "name": "Kunnam Checkpoint", "lat": 11.2510, "lon": 78.9810, "type": "checkpoint"},
+    {"id": "Node_P3", "name": "Alathur Highway Post", "lat": 11.1850, "lon": 78.8120, "type": "checkpoint"},
     {"id": "Node_B", "name": "Highway Checkpoint B", "lat": 18.6102, "lon": 73.9165, "type": "checkpoint"},
     {"id": "Node_C", "name": "Chakan Junction", "lat": 18.7606, "lon": 73.8636, "type": "checkpoint"},
     {"id": "Node_D", "name": "Shirur Junction", "lat": 18.8270, "lon": 74.3760, "type": "checkpoint"}
   ],
   "buyers": [
+    {"id": "buyer_p1", "name": "Annapoorna Hotel & Bistro", "lat": 11.2395, "lon": 78.8780},
+    {"id": "buyer_p2", "name": "Perambalur Fresh Mart Co-op", "lat": 11.2330, "lon": 78.8710},
+    {"id": "buyer_p3", "name": "Royal Dine Caterers", "lat": 11.2420, "lon": 78.8830},
     {"id": "buyer_1", "name": "Fresh Basket Co-op", "lat": 18.6220, "lon": 73.9250},
     {"id": "buyer_2", "name": "Pimpri Neighbourhood Grocer", "lat": 18.6360, "lon": 73.9120},
     {"id": "buyer_3", "name": "Community Food Hub", "lat": 18.6070, "lon": 73.9340},
     {"id": "buyer_4", "name": "Market Road Retailers", "lat": 18.5400, "lon": 73.8700}
+  ],
+  "trucks": [
+    {
+      "id": "TRK-101",
+      "name": "Eicher Pro 2049 (Reefer)",
+      "capacity_kg": 2500,
+      "driver": "Murugan S.",
+      "phone": "+91 98421-43210",
+      "status": "IN_TRANSIT",
+      "current_checkpoint": "NH-38 Bypass Junction"
+    },
+    {
+      "id": "TRK-102",
+      "name": "Tata 407 Agri Express",
+      "capacity_kg": 1800,
+      "driver": "Ravi Kumar",
+      "phone": "+91 94432-87654",
+      "status": "WARNING",
+      "current_checkpoint": "Kunnam Checkpoint"
+    }
   ]
 }
-

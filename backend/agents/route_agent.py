@@ -140,3 +140,132 @@ def solve_route(
         "eta_minutes": total_minutes,
         "eta_hours": round(total_minutes / 60, 2),
     }
+
+
+def optimize_initial_route(
+    farm_id: str,
+    produce_type: str = "Tomatoes",
+    capacity_kg: float = 1000.0,
+    candidate_market_ids: list[str] | None = None,
+    network: dict[str, list[dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    """Evaluate candidate destination markets with OR-Tools and spoilage penalty.
+    
+    Objective: minimize total travel time + spoilage penalty computed with
+    exponential decay Q(t) = Q0 * e^(-k*t). Faster-spoiling produce gets
+    higher penalty, auto-selecting the best optimal market node.
+    """
+    from agents.spoilage_agent import calculate_quality, DECAY_COEFFICIENTS
+
+    net = network or load_network()
+    all_markets = net.get("markets", [])
+    if candidate_market_ids:
+        markets_to_test = [m for m in all_markets if m["id"] in candidate_market_ids]
+    else:
+        markets_to_test = all_markets
+
+    if not markets_to_test:
+        raise ValueError("No candidate markets available for optimization")
+
+    unit_values = {"Tomatoes": 1.8, "Apples": 2.4, "Onions": 1.1}
+    unit_val = unit_values.get(produce_type, 1.5)
+    cargo_value = capacity_kg * unit_val
+
+    candidates = []
+    best_candidate = None
+    lowest_cost = float("inf")
+
+    for market in markets_to_test:
+        try:
+            route = solve_route(
+                farm_id,
+                market["id"],
+                produce_type=produce_type,
+                network=net,
+            )
+            travel_hours = route["eta_minutes"] / 60.0
+            arrival_quality = calculate_quality(produce_type, travel_hours, temperature_celsius=22.0)
+            spoilage_penalty = round(cargo_value * (1.0 - arrival_quality / 100.0), 2)
+            value_saved = round(cargo_value * (arrival_quality / 100.0), 2)
+
+            # Combined objective cost: travel time penalty + spoilage loss penalty
+            decay_k = DECAY_COEFFICIENTS.get(produce_type, 0.05)
+            objective_cost = round((route["eta_minutes"] * 0.5) + (spoilage_penalty * (1.0 + decay_k * 10)), 2)
+
+            cand_info = {
+                "market_id": market["id"],
+                "market_name": market["name"],
+                "lat": market["lat"],
+                "lon": market["lon"],
+                "distance_km": route["distance_km"],
+                "eta_minutes": route["eta_minutes"],
+                "eta_hours": route["eta_hours"],
+                "arrival_quality_percent": arrival_quality,
+                "spoilage_penalty": spoilage_penalty,
+                "value_saved": value_saved,
+                "objective_cost": objective_cost,
+                "route": route,
+            }
+            candidates.append(cand_info)
+
+            if objective_cost < lowest_cost:
+                lowest_cost = objective_cost
+                best_candidate = cand_info
+        except Exception:
+            continue
+
+    if not candidates or not best_candidate:
+        raise ValueError("Failed to solve route for any candidate markets")
+
+    # Sort candidates by objective cost ascending
+    candidates.sort(key=lambda c: c["objective_cost"])
+    for idx, c in enumerate(candidates):
+        c["rank"] = idx + 1
+        c["is_best"] = (c["market_id"] == best_candidate["market_id"])
+
+    rec_reason = (
+        f"Optimal destination '{best_candidate['market_name']}' delivers "
+        f"{best_candidate['arrival_quality_percent']}% freshness with lowest spoilage penalty "
+        f"(${best_candidate['spoilage_penalty']:.2f}) over {best_candidate['distance_km']} km."
+    )
+
+    return {
+        "best_market_id": best_candidate["market_id"],
+        "best_market_name": best_candidate["market_name"],
+        "best_route": best_candidate["route"],
+        "arrival_quality_percent": best_candidate["arrival_quality_percent"],
+        "value_saved": best_candidate["value_saved"],
+        "cargo_value": round(cargo_value, 2),
+        "recommendation_reason": rec_reason,
+        "candidates": candidates,
+    }
+
+
+def reroute_from_position(
+    current_lat: float,
+    current_lon: float,
+    current_name: str,
+    destination_id: str,
+    produce_type: str = "Tomatoes",
+    network: dict[str, list[dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    """Reroute dynamically from truck's current position to destination or recovery facility."""
+    net = network or load_network()
+    temp_node_id = "CURRENT_TRUCK_POS"
+    virtual_node = {
+        "id": temp_node_id,
+        "name": f"Current Location ({current_name})",
+        "lat": current_lat,
+        "lon": current_lon,
+        "type": "checkpoint",
+    }
+    net_copy = {k: list(v) for k, v in net.items()}
+    net_copy.setdefault("waypoints", []).append(virtual_node)
+
+    return solve_route(
+        temp_node_id,
+        destination_id,
+        produce_type=produce_type,
+        network=net_copy,
+    )
+
