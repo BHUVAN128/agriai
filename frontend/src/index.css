@@ -16,6 +16,7 @@ button { cursor: pointer; }
 ::selection { color: #101812; background: #b3e875; }
 
 .leaflet-container { font-family: "Manrope", sans-serif; }
+.leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(1.1) saturate(0.3); }
 .leaflet-control-attribution { font-size: 9px !important; }
 .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: #19241c; color: #edf3e9; }
 .leaflet-popup-content { margin: 10px 13px; }
