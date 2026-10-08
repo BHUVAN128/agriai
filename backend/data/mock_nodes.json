@@ -1,0 +1,27 @@
+{
+  "farms": [
+    {"id": "farm_pune", "name": "Green Valley Farm", "lat": 18.5204, "lon": 73.8567}
+  ],
+  "markets": [
+    {"id": "market_pune", "name": "Pune Wholesale Market", "lat": 18.5018, "lon": 73.8636, "type": "wholesale"},
+    {"id": "market_nashik", "name": "Nashik Produce Mandi", "lat": 19.9975, "lon": 73.7898, "type": "wholesale"},
+    {"id": "market_satara", "name": "Satara Fresh Market", "lat": 17.6805, "lon": 74.0183, "type": "wholesale"}
+  ],
+  "cold_storages": [
+    {"id": "cold_pimpri", "name": "Pimpri Cold Storage", "lat": 18.6298, "lon": 73.7997, "type": "cold_storage"},
+    {"id": "cold_khed", "name": "Khed Agro Cold Chain", "lat": 18.8433, "lon": 73.8910, "type": "cold_storage"},
+    {"id": "cold_sangamner", "name": "Sangamner Cold Hub", "lat": 19.5674, "lon": 74.2115, "type": "cold_storage"}
+  ],
+  "waypoints": [
+    {"id": "Node_B", "name": "Highway Checkpoint B", "lat": 18.6102, "lon": 73.9165, "type": "checkpoint"},
+    {"id": "Node_C", "name": "Chakan Junction", "lat": 18.7606, "lon": 73.8636, "type": "checkpoint"},
+    {"id": "Node_D", "name": "Shirur Junction", "lat": 18.8270, "lon": 74.3760, "type": "checkpoint"}
+  ],
+  "buyers": [
+    {"id": "buyer_1", "name": "Fresh Basket Co-op", "lat": 18.6220, "lon": 73.9250},
+    {"id": "buyer_2", "name": "Pimpri Neighbourhood Grocer", "lat": 18.6360, "lon": 73.9120},
+    {"id": "buyer_3", "name": "Community Food Hub", "lat": 18.6070, "lon": 73.9340},
+    {"id": "buyer_4", "name": "Market Road Retailers", "lat": 18.5400, "lon": 73.8700}
+  ]
+}
+
