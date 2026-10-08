@@ -1,24 +1,35 @@
 {
   "farms": [
-    {"id": "farm_perambalur_valley", "name": "Perambalur Agro Valley", "lat": 11.2342, "lon": 78.8820},
-    {"id": "farm_chettikulam", "name": "Chettikulam Organic Fields", "lat": 11.1524, "lon": 78.7521},
-    {"id": "farm_veppanthattai", "name": "Veppanthattai Agro Fields", "lat": 11.3210, "lon": 78.9324},
+    {"id": "farm_perambalur_valley", "name": "Perambalur Agro Valley (Perambalur)", "lat": 11.2342, "lon": 78.8820},
+    {"id": "farm_chettikulam", "name": "Chettikulam Organic Fields (Perambalur)", "lat": 11.1524, "lon": 78.7521},
+    {"id": "farm_veppanthattai", "name": "Veppanthattai Agro Fields (Perambalur)", "lat": 11.3210, "lon": 78.9324},
+    {"id": "farm_kanchipuram", "name": "Kanchipuram Farm Belt (Chennai Side)", "lat": 12.8342, "lon": 79.7036},
+    {"id": "farm_jayankondam", "name": "Jayankondam Produce Estate (Ariyalur)", "lat": 11.2150, "lon": 79.3080},
+    {"id": "farm_trichy", "name": "Manachanallur Farm Hub (Trichy)", "lat": 10.9080, "lon": 78.7020},
+    {"id": "farm_salem", "name": "Attur Veg & Agro Farm (Salem)", "lat": 11.5970, "lon": 78.6010},
     {"id": "farm_pune", "name": "Green Valley Farm (Pune)", "lat": 18.5204, "lon": 73.8567}
   ],
   "markets": [
-    {"id": "market_perambalur_mandi", "name": "Perambalur Uzhavar Sandhai", "lat": 11.2380, "lon": 78.8750, "type": "wholesale"},
-    {"id": "market_ariyalur_mandi", "name": "Ariyalur Wholesale Mandi", "lat": 11.1401, "lon": 79.0786, "type": "wholesale"},
-    {"id": "market_pune", "name": "Pune Wholesale Market", "lat": 18.5018, "lon": 73.8636, "type": "wholesale"},
-    {"id": "market_nashik", "name": "Nashik Produce Mandi", "lat": 19.9975, "lon": 73.7898, "type": "wholesale"},
-    {"id": "market_satara", "name": "Satara Fresh Market", "lat": 17.6805, "lon": 74.0183, "type": "wholesale"}
+    {"id": "market_perambalur_mandi", "name": "Perambalur Uzhavar Sandhai (Perambalur)", "lat": 11.2380, "lon": 78.8750, "type": "wholesale"},
+    {"id": "market_kunnam_mandi", "name": "Kunnam Agro Mandi (Perambalur)", "lat": 11.2510, "lon": 78.9810, "type": "wholesale"},
+    {"id": "market_chennai_koyambedu", "name": "Koyambedu Wholesale Market (Chennai)", "lat": 13.0694, "lon": 80.1948, "type": "wholesale"},
+    {"id": "market_ariyalur_mandi", "name": "Ariyalur Wholesale Mandi (Ariyalur)", "lat": 11.1401, "lon": 79.0786, "type": "wholesale"},
+    {"id": "market_trichy_mandi", "name": "Trichy Gandhi Market (Trichy)", "lat": 10.8250, "lon": 78.6980, "type": "wholesale"},
+    {"id": "market_salem_mandi", "name": "Salem Central Uzhavar Sandhai (Salem)", "lat": 11.6640, "lon": 78.1460, "type": "wholesale"},
+    {"id": "market_pune", "name": "Pune Wholesale Market (Pune)", "lat": 18.5018, "lon": 73.8636, "type": "wholesale"},
+    {"id": "market_nashik", "name": "Nashik Produce Mandi (Nashik)", "lat": 19.9975, "lon": 73.7898, "type": "wholesale"},
+    {"id": "market_satara", "name": "Satara Fresh Market (Satara)", "lat": 17.6805, "lon": 74.0183, "type": "wholesale"}
   ],
   "cold_storages": [
+    {"id": "cold_chennai", "name": "Chennai Agro Cold Terminal (Madhavaram)", "lat": 13.1480, "lon": 80.2310, "type": "cold_storage"},
     {"id": "cold_perambalur", "name": "Perambalur Central Cold Chain", "lat": 11.2450, "lon": 78.8690, "type": "cold_storage"},
+    {"id": "cold_trichy", "name": "Trichy Apex Cold Storage", "lat": 10.8120, "lon": 78.6850, "type": "cold_storage"},
     {"id": "cold_pimpri", "name": "Pimpri Cold Storage", "lat": 18.6298, "lon": 73.7997, "type": "cold_storage"},
     {"id": "cold_khed", "name": "Khed Agro Cold Chain", "lat": 18.8433, "lon": 73.8910, "type": "cold_storage"},
     {"id": "cold_sangamner", "name": "Sangamner Cold Hub", "lat": 19.5674, "lon": 74.2115, "type": "cold_storage"}
   ],
   "waypoints": [
+    {"id": "Node_Chennai_Bypass", "name": "Chennai Outer Ring Road Checkpoint", "lat": 13.0210, "lon": 80.0820, "type": "checkpoint"},
     {"id": "Node_P1", "name": "NH-38 Bypass Junction", "lat": 11.2210, "lon": 78.8650, "type": "checkpoint"},
     {"id": "Node_P2", "name": "Kunnam Checkpoint", "lat": 11.2510, "lon": 78.9810, "type": "checkpoint"},
     {"id": "Node_P3", "name": "Alathur Highway Post", "lat": 11.1850, "lon": 78.8120, "type": "checkpoint"},
@@ -27,10 +38,11 @@
     {"id": "Node_D", "name": "Shirur Junction", "lat": 18.8270, "lon": 74.3760, "type": "checkpoint"}
   ],
   "buyers": [
-    {"id": "buyer_p1", "name": "Annapoorna Hotel & Bistro", "lat": 11.2395, "lon": 78.8780},
+    {"id": "buyer_chennai_saravana", "name": "Saravana Bhavan Kitchen Hub (Chennai)", "lat": 13.0610, "lon": 80.2110},
+    {"id": "buyer_p1", "name": "Annapoorna Hotel & Bistro (Perambalur)", "lat": 11.2395, "lon": 78.8780},
     {"id": "buyer_p2", "name": "Perambalur Fresh Mart Co-op", "lat": 11.2330, "lon": 78.8710},
     {"id": "buyer_p3", "name": "Royal Dine Caterers", "lat": 11.2420, "lon": 78.8830},
-    {"id": "buyer_1", "name": "Fresh Basket Co-op", "lat": 18.6220, "lon": 73.9250},
+    {"id": "buyer_1", "name": "Fresh Basket Co-op (Pune)", "lat": 18.6220, "lon": 73.9250},
     {"id": "buyer_2", "name": "Pimpri Neighbourhood Grocer", "lat": 18.6360, "lon": 73.9120},
     {"id": "buyer_3", "name": "Community Food Hub", "lat": 18.6070, "lon": 73.9340},
     {"id": "buyer_4", "name": "Market Road Retailers", "lat": 18.5400, "lon": 73.8700}

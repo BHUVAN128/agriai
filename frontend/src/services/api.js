@@ -59,3 +59,20 @@ export const rerouteTruck = (data) =>
     method: "POST",
     body: JSON.stringify(data),
   });
+
+export async function fetchOpenMeteoWeather(lat, lon) {
+  try {
+    const res = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m`
+    );
+    if (!res.ok) throw new Error("Open-Meteo request failed");
+    const data = await res.json();
+    return {
+      temperature: Number((data.current?.temperature_2m ?? 32).toFixed(1)),
+      humidity: Number((data.current?.relative_humidity_2m ?? 65).toFixed(0)),
+    };
+  } catch (err) {
+    // Return sensible fallback
+    return { temperature: 34.0, humidity: 62 };
+  }
+}

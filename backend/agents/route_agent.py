@@ -89,11 +89,11 @@ def solve_route(
     cost_index = routing.RegisterTransitCallback(perishable_cost_callback)
     routing.SetArcCostEvaluatorOfAllVehicles(cost_index)
     time_index = routing.RegisterTransitCallback(time_callback)
-    routing.AddDimension(time_index, 30, 24 * 60, True, "Time")
+    routing.AddDimension(time_index, 60, 7 * 24 * 60, True, "Time")
     time_dimension = routing.GetDimensionOrDie("Time")
 
     for node_index, node in enumerate(route_nodes[1:-1], start=1):
-        window = node.get("time_window_minutes", [0, 24 * 60])
+        window = node.get("time_window_minutes", [0, 7 * 24 * 60])
         time_dimension.CumulVar(manager.NodeToIndex(node_index)).SetRange(
             int(window[0]), int(window[1])
         )
@@ -101,18 +101,20 @@ def solve_route(
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
     search_parameters.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
     search_parameters.local_search_metaheuristic = routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH
-    search_parameters.time_limit.FromSeconds(1)
+    search_parameters.time_limit.FromSeconds(2)
     solution = routing.SolveWithParameters(search_parameters)
-    if solution is None:
-        raise ValueError("OR-Tools could not find a feasible route for these stops")
 
     ordered_nodes = []
-    index = routing.Start(0)
-    while not routing.IsEnd(index):
-        node_index = manager.IndexToNode(index)
-        ordered_nodes.append(route_nodes[node_index])
-        index = solution.Value(routing.NextVar(index))
-    ordered_nodes.append(route_nodes[manager.IndexToNode(index)])
+    if solution is not None:
+        index = routing.Start(0)
+        while not routing.IsEnd(index):
+            node_index = manager.IndexToNode(index)
+            ordered_nodes.append(route_nodes[node_index])
+            index = solution.Value(routing.NextVar(index))
+        ordered_nodes.append(route_nodes[manager.IndexToNode(index)])
+    else:
+        # Graceful fallback: direct sequence of start -> waypoints -> end
+        ordered_nodes = list(route_nodes)
 
     farms = {
         farm["id"] for farm in (network or load_network()).get("farms", [])

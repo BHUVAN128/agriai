@@ -304,7 +304,7 @@ function App() {
               </div>
 
               {/* Leaflet Map with Safe, Disruption & Detour Polylines */}
-              <MapView route={route} result={result} />
+              <MapView route={route} result={result} shipment={shipment} options={options} />
 
               <div className="map-footer">
                 <div className="footer-stat">

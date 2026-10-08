@@ -16,7 +16,9 @@ def calculate_quality(
     temperature_celsius: float = 20.0,
     initial_quality: float = 100.0,
 ) -> float:
-    """Return remaining quality as a percentage using the requested Q(t) model."""
+    """Return remaining quality as a percentage using weather-aware Q(t) model.
+    Increases decay rate k linearly above 30°C: k_effective = k * (1 + 0.08 * (temp - 30)).
+    """
     if produce_type not in DECAY_COEFFICIENTS:
         raise ValueError(f"Unsupported produce type: {produce_type}")
     if elapsed_hours < 0:
@@ -24,10 +26,14 @@ def calculate_quality(
     if not 0.0 <= initial_quality <= 100.0:
         raise ValueError("Initial quality must be between 0 and 100")
 
-    temperature_factor = max(0.0, 1.0 + TEMPERATURE_SENSITIVITY * temperature_celsius)
-    quality = initial_quality * exp(
-        -DECAY_COEFFICIENTS[produce_type] * temperature_factor * elapsed_hours
-    )
+    base_k = DECAY_COEFFICIENTS[produce_type]
+    if temperature_celsius > 30.0:
+        k_effective = base_k * (1.0 + 0.08 * (temperature_celsius - 30.0))
+    else:
+        temperature_factor = max(0.0, 1.0 + TEMPERATURE_SENSITIVITY * temperature_celsius)
+        k_effective = base_k * temperature_factor
+
+    quality = initial_quality * exp(-k_effective * elapsed_hours)
     return round(quality, 2)
 
 
@@ -45,9 +51,13 @@ def estimate_remaining_shelf_life_hours(
     if quality_percent <= minimum_quality:
         return 0.0
 
-    rate = DECAY_COEFFICIENTS[produce_type] * max(
-        0.0, 1.0 + TEMPERATURE_SENSITIVITY * temperature_celsius
-    )
+    base_k = DECAY_COEFFICIENTS[produce_type]
+    if temperature_celsius > 30.0:
+        rate = base_k * (1.0 + 0.08 * (temperature_celsius - 30.0))
+    else:
+        rate = base_k * max(0.0, 1.0 + TEMPERATURE_SENSITIVITY * temperature_celsius)
+
     if rate == 0.0:
         return 24.0
     return round(max(0.0, -log(minimum_quality / quality_percent) / rate), 2)
+
