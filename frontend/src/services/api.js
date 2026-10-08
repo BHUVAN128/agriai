@@ -32,6 +32,12 @@ export const sendVoiceCommand = (text, shipment) =>
     body: JSON.stringify({ text, shipment }),
   });
 
+export const sendDriverVoiceCommand = (text, shipment) =>
+  request("/api/v1/driver-voice", {
+    method: "POST",
+    body: JSON.stringify({ text, shipment }),
+  });
+
 export const getFarmerAlerts = () => request("/api/v1/farmer-alerts");
 
 export const ackFarmerAlert = (alert_id, action) =>

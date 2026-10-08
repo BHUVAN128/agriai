@@ -88,6 +88,16 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .slider-field input[type="range"]::-moz-range-thumb { height: 9px; width: 9px; border: 2px solid #101812; border-radius: 50%; background: #b3e875; box-shadow: 0 0 0 1px #b3e875; }
 .range-ends { display: flex; justify-content: space-between; margin-top: 6px; color: #6f7e70; font-size: 8px; }
 .voice-box { padding: 15px; margin-top: auto; }
+.driver-voice { padding: 17px; }
+.driver-voice-copy strong, .driver-voice-copy span { display: block; }
+.driver-voice-copy strong { color: #e6ede3; font-size: 13px; }
+.driver-voice-copy span { margin-top: 4px; color: #91a091; font-size: 10px; }
+.driver-mic { display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 76px; width: 100%; margin-top: 14px; border: 2px solid #73945a; border-radius: 13px; color: #142010; background: #b3e875; font-size: 14px; font-weight: 800; }
+.driver-mic.is-listening { border-color: #ff8e7a; color: #fff; background: #b9382c; animation: pulse 1.3s infinite; }
+.driver-mic.is-speaking { border-color: #80ce82; color: #102010; background: #62c776; }
+.driver-transcript { margin-top: 13px; padding: 10px 12px; border: 1px solid #344135; border-radius: 8px; background: #111a13; }
+.driver-transcript p { margin: 4px 0; color: #c6d2c1; font-size: 10px; line-height: 1.5; }
+.driver-transcript b { color: #b3e875; }
 .voice-heading { display: flex; align-items: center; gap: 9px; }
 .voice-icon { height: 30px; width: 30px; display: grid; place-items: center; color: #c0e38b; border-radius: 9px; background: #263322; }
 .voice-heading strong { display: block; font-size: 10px; }

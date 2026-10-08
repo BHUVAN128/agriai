@@ -1,6 +1,7 @@
 """FastAPI entrypoint for the AI Agri-Routing System prototype."""
 
 import os
+import re
 import time
 from datetime import datetime
 from typing import Any, Literal
@@ -153,11 +154,27 @@ class IncidentRequest(ShipmentRequest):
     delay_mins: float = Field(default=0, ge=0, le=1440)
     temp_celsius: float = Field(default=20, ge=-50, le=80)
     node_id: str = "Node_B"
+    disruption_type: str = Field(
+        default="weather",
+        description=(
+            "Disruption mode: 'traffic' (Traffic Jam / Road Works), "
+            "'weather' (Weather & Container Temp Spikes), "
+            "'breakdown' (Vehicle Mechanical Breakdown)."
+        ),
+    )
 
 
 class VoiceRequest(BaseModel):
     text: str = Field(min_length=1, max_length=1000)
     shipment: ShipmentRequest
+
+
+class DriverVoiceRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=1000)
+    shipment: ShipmentRequest
+    node_id: str = "Node_B"
+    delay_mins: float = Field(default=30, ge=0, le=1440)
+    temp_celsius: float = Field(default=34, ge=-50, le=80)
 
 
 class DriverAlertRequest(BaseModel):
@@ -278,6 +295,7 @@ def simulate_incident(
     delay_mins: float,
     temp_celsius: float,
     node_id: str,
+    disruption_type: str = "weather",
 ) -> dict[str, Any]:
     current_net = load_network()
     current_nodes = all_nodes(current_net)
@@ -300,7 +318,14 @@ def simulate_incident(
     quality = calculate_quality(
         shipment.produce_type, total_elapsed_hours, temp_celsius
     )
-    decision = evaluate_incident(quality, incident_node, current_net)
+    decision = evaluate_incident(
+        quality,
+        incident_node,
+        current_net,
+        disruption_type=disruption_type,
+        original_target_id=shipment.target_market_id,
+    )
+    disruption_mode = decision["disruption_type"]
     cargo_value = shipment.capacity_kg * PRODUCE_VALUE_PER_KG[shipment.produce_type]
     result: dict[str, Any] = {
         "original_route": original_route,
@@ -312,7 +337,9 @@ def simulate_incident(
         "delay_mins": round(delay_mins, 1),
         "temperature_celsius": temp_celsius,
         "incident_node": incident_node,
+        "disruption_type": disruption_mode,
         "decision": decision,
+        "status_badge": decision["status_badge"],
         "route_status": "warning",
         "flash_sale": None,
     }
@@ -331,6 +358,76 @@ def simulate_incident(
         result["detour_route"] = detour
         result["route_status"] = "rerouted"
         value_saved = cargo_value * quality / 100
+
+    # ------------------------------------------------------------------------
+    # SCENARIO 1: TRAFFIC JAM / ROAD WORKS
+    # OR-Tools invalidates the blocked primary segment and solves the
+    # alternative corridor ("Option 2") from the incident checkpoint onward.
+    # ------------------------------------------------------------------------
+    elif decision["action"] == "detour_traffic":
+        destination = decision["destination"] or current_nodes[shipment.target_market_id]
+        primary_ids = [node["id"] for node in original_route["nodes"]]
+        original_waypoints = [
+            node_id_item for node_id_item in primary_ids
+            if node_id_item not in {shipment.farm_id, shipment.target_market_id}
+        ]
+
+        # Corridors NOT used by the (now blocked) primary path = candidate detours
+        detour_waypoints = [
+            wp["id"] for wp in current_net.get("waypoints", [])
+            if wp["id"] not in primary_ids and wp["id"] != node_id
+        ]
+
+        alternative = None
+        used_waypoint = None
+        for candidate_wp in detour_waypoints:
+            try:
+                alternative = solve_route(
+                    node_id,
+                    destination["id"],
+                    waypoint_ids=[candidate_wp],
+                    produce_type=shipment.produce_type,
+                    network=current_net,
+                )
+                used_waypoint = candidate_wp
+                break
+            except ValueError:
+                continue
+        if alternative is None:
+            # OR-Tools fallback: direct alternative path ignoring the blocked segment
+            try:
+                alternative = solve_route(
+                    node_id,
+                    destination["id"],
+                    produce_type=shipment.produce_type,
+                    network=current_net,
+                )
+            except ValueError as error:
+                raise HTTPException(status_code=422, detail=str(error)) from error
+
+        result["detour_route"] = alternative
+        result["alternative_route"] = alternative
+        result["active_path_option"] = "Option 2 (Alternative Path)"
+        result["blocked_segment"] = {
+            "primary_nodes": original_waypoints,
+            "blocked_at": incident_node["name"],
+            "from_name": original_route["nodes"][0]["name"],
+            "to_name": original_route["nodes"][-1]["name"],
+            "detour_via": used_waypoint,
+        }
+        result["route_status"] = "detour"
+        value_saved = cargo_value * quality / 100
+
+    # ------------------------------------------------------------------------
+    # SCENARIO 3 (Q(t) > 75%): REPLACEMENT VEHICLE DISPATCHED, ROUTE CONTINUES
+    # ------------------------------------------------------------------------
+    elif decision["action"] == "replacement_vehicle":
+        result["replacement_vehicle"] = decision["replacement_vehicle"]
+        result["route_status"] = "replacement"
+        # Cargo is transshipped at the breakdown coordinates and the original
+        # route continues with the relief vehicle — no detour required.
+        value_saved = cargo_value * quality / 100
+
     elif decision["action"] == "flash_sale":
         shelf_life = estimate_remaining_shelf_life_hours(
             shipment.produce_type, quality, temp_celsius
@@ -360,12 +457,40 @@ def simulate_incident(
     # REAL-TIME BROADCAST: SYNC TO FARMER ALERTS & RESTAURANT FLASH SALES
     # ------------------------------------------------------------------------
     now_str = datetime.now().strftime("%H:%M:%S")
+
+    # Scenario-specific broadcast titles
+    if decision.get("breakdown_alert"):
+        alert_title = decision["breakdown_alert"]  # "Truck TRK-102 stopped for repair at [Location]"
+        alert_description = (
+            f"Breakdown at {incident_node['name']} · Q(t) = {quality:.1f}% · "
+            f"{decision['status_badge']}. {decision['reason']}"
+        )
+    elif decision["action"] == "detour_traffic":
+        alert_title = f"Traffic Jam / Road Works at {incident_node['name']} — Detour Active"
+        alert_description = (
+            f"Primary path segment invalidated via OR-Tools. "
+            f"Navigation switched to {result.get('active_path_option', 'Option 2')}. "
+            f"Q(t) = {quality:.1f}%."
+        )
+    elif decision["action"] == "flash_sale":
+        alert_title = f"FLASH SALE ACTIVE: Q(t) {quality:.1f}% < 50% near {incident_node['name']}"
+        alert_description = (
+            f"Temp {temp_celsius}°C · Delay +{delay_mins} min · Quality collapsed to {quality:.1f}%. "
+            f"Batch pushed to Restaurant Flash Sales Portal."
+        )
+    else:
+        alert_title = f"ALERT: Vehicle TRK-102 disrupted near {incident_node['name']}"
+        alert_description = (
+            f"Temp spike {temp_celsius}°C · Transit delay +{delay_mins} min · "
+            f"Quality degraded to {quality:.1f}%."
+        )
+
     alert_obj = {
         "id": f"alt_{int(time.time()*1000)}",
         "truck_id": "TRK-102",
         "driver_name": "Ravi Kumar",
-        "title": f"ALERT: Vehicle TRK-102 disrupted near {incident_node['name']}",
-        "description": f"Temp spike {temp_celsius}°C · Transit delay +{delay_mins} min · Quality degraded to {quality:.1f}%.",
+        "title": alert_title,
+        "description": alert_description,
         "checkpoint_name": incident_node["name"],
         "node_id": node_id,
         "temp_celsius": temp_celsius,
@@ -376,6 +501,9 @@ def simulate_incident(
         "value_at_risk": round(cargo_value * (1 - quality / 100), 2),
         "recommended_action": decision["action"],
         "decision_reason": decision["reason"],
+        "disruption_type": disruption_mode,
+        "status_badge": decision["status_badge"],
+        "replacement_vehicle": decision.get("replacement_vehicle"),
         "status": "ACTIVE",
         "created_at": now_str,
         "timestamp": time.time(),
@@ -383,15 +511,38 @@ def simulate_incident(
     FARMER_ALERTS.insert(0, alert_obj)
 
     # Update truck status
+    truck_status_by_action = {
+        "detour_traffic": "DETOUR_ACTIVE",
+        "replacement_vehicle": "REPLACEMENT_DISPATCHED",
+        "flash_sale": "FLASH_SALE",
+        "secondary_market": "REROUTED",
+        "cold_storage": "REROUTED",
+    }
     for trk in TRUCKS_STATE:
         if trk["id"] == "TRK-102":
-            trk["status"] = "FLASH_SALE" if decision["action"] == "flash_sale" else "REROUTED"
+            trk["status"] = truck_status_by_action.get(decision["action"], "REROUTED")
             trk["temp_celsius"] = temp_celsius
             trk["quality_percent"] = quality
             trk["location_name"] = incident_node["name"]
 
-    # Trigger flash sale deal if quality <= 50% or flash sale action chosen
-    if decision["action"] == "flash_sale" or quality <= 50.0:
+    # Broadcast to Restaurant Flash Sales Portal (/api/v1/flash-deals)
+    # Fires for: weather Q(t) < 50% (Case 2B) and breakdown distress (Q(t) < 50%).
+    if decision["action"] == "flash_sale":
+        is_breakdown = any(
+            word in disruption_mode for word in ("breakdown", "mechanical", "repair")
+        )
+        if is_breakdown:
+            deal_trigger = "breakdown_distress"
+            distress_reason = (
+                f"Vehicle breakdown distress: transport cancelled, on-site instant sale at "
+                f"{incident_node['name']} (Q(t) = {quality:.1f}%)."
+            )
+        else:
+            deal_trigger = "quality_below_50"
+            distress_reason = (
+                f"Q(t) = {quality:.1f}% collapsed below 50% due to container temp "
+                f"{temp_celsius}°C + {delay_mins} min delay."
+            )
         disc = 50 if quality > 40 else 60
         deal_obj = {
             "id": f"deal_{int(time.time()*1000)}",
@@ -409,6 +560,9 @@ def simulate_incident(
             "unit_price_flash": round((cargo_value * (1 - disc / 100)) / shipment.capacity_kg, 2),
             "quality_percent": quality,
             "remaining_hours": round(result.get("remaining_shelf_life_hours", 4.0), 1),
+            "trigger": deal_trigger,
+            "distress_reason": distress_reason,
+            "disruption_type": disruption_mode,
             "status": "ACTIVE",
             "claimed_by": None,
             "created_at": now_str,
@@ -426,6 +580,7 @@ def simulate(request: IncidentRequest) -> dict[str, Any]:
         request.delay_mins,
         request.temp_celsius,
         request.node_id,
+        disruption_type=request.disruption_type,
     )
 
 
@@ -445,6 +600,69 @@ def voice_command(request: VoiceRequest) -> dict[str, Any]:
         incident["node_id"],
     )
     return {"incident": incident, **result}
+
+
+@app.post("/api/v1/driver-voice")
+def driver_voice_command(request: DriverVoiceRequest) -> dict[str, Any]:
+    """Handle driver voice intents and return a concise line for speech synthesis."""
+    text = request.text.strip()
+    lowered = text.lower()
+    node_id = request.node_id
+    checkpoint_match = re.search(r"(?:checkpoint|node)\s*([a-z0-9]+)", text, re.I)
+    if checkpoint_match:
+        candidate = f"Node_{checkpoint_match.group(1).upper()}"
+        if candidate in all_nodes(load_network()):
+            node_id = candidate
+
+    if any(term in lowered for term in ("freshness", "eta", "arrival", "status")):
+        current_net = load_network()
+        route = solve_route(
+            request.shipment.farm_id,
+            request.shipment.target_market_id,
+            produce_type=request.shipment.produce_type,
+            network=current_net,
+        )
+        quality = calculate_quality(
+            request.shipment.produce_type, route["eta_minutes"] / 60, 20.0
+        )
+        hours = route["eta_minutes"] / 60
+        eta_text = f"{int(hours)} hours" if hours >= 1 else f"{max(1, round(route['eta_minutes']))} minutes"
+        return {
+            "intent": "status",
+            "reply": f"Your cargo is at {round(quality)}% freshness with {eta_text} remaining.",
+            "quality_percent": quality,
+            "eta_minutes": route["eta_minutes"],
+        }
+
+    if any(term in lowered for term in ("breakdown", "broken down", "vehicle stopped")):
+        incident = simulate_incident(
+            request.shipment, request.delay_mins, request.temp_celsius, node_id,
+            disruption_type="breakdown",
+        )
+        quality = incident["quality_percent"]
+        if quality > 75:
+            reply = f"Breakdown logged. Food quality is safe at {round(quality)}%. Replacement vehicle requested."
+        elif quality < 50:
+            reply = f"Breakdown logged. Quality low at {round(quality)}%. Cargo listed on Restaurant Flash Sales."
+        else:
+            reply = f"Breakdown logged. Food quality is {round(quality)}%. Cargo routed to cold storage."
+        return {"intent": "breakdown", "reply": reply, "incident": incident, **incident}
+
+    is_traffic = any(term in lowered for term in ("traffic", "best path", "route", "rerout"))
+    incident = simulate_incident(
+        request.shipment,
+        request.delay_mins,
+        request.temp_celsius,
+        node_id,
+        disruption_type="traffic" if is_traffic else "weather",
+    )
+    if is_traffic:
+        reply = "Traffic detected on main highway. Rerouting to Option 2."
+        intent = "traffic"
+    else:
+        reply = f"Delay logged. Cargo freshness is {round(incident['quality_percent'])}%. ETA updated."
+        intent = "delay"
+    return {"intent": intent, "reply": reply, "incident": incident, **incident}
 
 
 # ============================================================================

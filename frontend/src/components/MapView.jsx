@@ -312,6 +312,22 @@ export default function MapView({ route, result, shipment, options }) {
     );
   }, [routesList, selectedRouteId]);
 
+  // --------------------------------------------------------------------------
+  // SCENARIO 1: Traffic Jam / Road Works — primary path blocked (orange/red),
+  // navigation switches to Option 2 (Alternative Path) rendered active green.
+  // --------------------------------------------------------------------------
+  const trafficIncident = result?.decision?.action === "detour_traffic";
+  const blockedPrimaryRoute = trafficIncident
+    ? routesList.find((r) => r.isWinner)
+    : null;
+
+  useEffect(() => {
+    if (result?.decision?.action !== "detour_traffic") return;
+    if (routesList.length < 2) return;
+    const optionTwo = routesList.find((r) => !r.isWinner) || routesList[1];
+    if (optionTwo) setSelectedRouteId(optionTwo.id);
+  }, [result, routesList]);
+
   // Congestion segment (colored orange)
   const trafficSegmentCoords = useMemo(() => {
     if (!activeRoute?.coords || !trafficActive) return [];
@@ -383,24 +399,31 @@ export default function MapView({ route, result, shipment, options }) {
         {routesList.map((r) => {
           const isSelected = r.id === activeRoute?.id;
           if (isSelected) return null;
+          const isBlockedPrimary = trafficIncident && r.isWinner;
 
           return (
             <Polyline
               key={r.id}
               positions={r.coords}
-              pathOptions={{
-                color: "#6b7280",
-                weight: 4,
-                opacity: 0.45,
-                dashArray: "5 7",
-              }}
+              pathOptions={
+                isBlockedPrimary
+                  ? { color: "#ef4444", weight: 7, opacity: 0.95 }
+                  : {
+                      color: "#6b7280",
+                      weight: 4,
+                      opacity: 0.45,
+                      dashArray: "5 7",
+                    }
+              }
               eventHandlers={{
                 click: () => setSelectedRouteId(r.id),
               }}
             >
               <Tooltip sticky>
                 <span className="font-mono text-xs">
-                  {r.badge}: {r.distanceKm} km · {r.durationMins} min · {r.quality}% Quality
+                  {isBlockedPrimary
+                    ? `⛔ PRIMARY PATH BLOCKED — Traffic Jam / Road Works near ${result?.incident_node?.name || "checkpoint"} · ${result?.status_badge || "Detour Active"}`
+                    : `${r.badge}: ${r.distanceKm} km · ${r.durationMins} min · ${r.quality}% Quality`}
                 </span>
               </Tooltip>
             </Polyline>
@@ -415,7 +438,7 @@ export default function MapView({ route, result, shipment, options }) {
             <Polyline
               positions={activeRoute.coords}
               pathOptions={{
-                color: "#00f5a0",
+                color: trafficIncident ? "#22c55e" : "#00f5a0",
                 weight: 12,
                 opacity: 0.22,
               }}
@@ -423,14 +446,22 @@ export default function MapView({ route, result, shipment, options }) {
             <Polyline
               positions={activeRoute.coords}
               pathOptions={{
-                color: activeRoute.isWinner ? "#00f5a0" : "#38bdf8",
+                color: trafficIncident
+                  ? "#22c55e"
+                  : activeRoute.isWinner
+                  ? "#00f5a0"
+                  : "#38bdf8",
                 weight: 6,
                 opacity: 0.95,
               }}
             >
               <Tooltip permanent direction="top" offset={[0, -10]}>
                 <span className="font-mono text-xs font-bold text-emerald-300 bg-black/80 px-2 py-0.5 rounded border border-emerald-500/40">
-                  {activeRoute.isWinner ? "🏆 BEST ROUTE" : "SELECTED ROUTE"}
+                  {trafficIncident
+                    ? "🟢 OPTION 2 · ACTIVE DETOUR"
+                    : activeRoute.isWinner
+                    ? "🏆 BEST ROUTE"
+                    : "SELECTED ROUTE"}
                 </span>
               </Tooltip>
             </Polyline>
@@ -473,7 +504,9 @@ export default function MapView({ route, result, shipment, options }) {
         {truckPos && (
           <Marker
             position={truckPos}
-            icon={createTruckIcon(activeRoute?.isWinner ? "#00f5a0" : "#38bdf8")}
+            icon={createTruckIcon(
+              trafficIncident || activeRoute?.isWinner ? "#00f5a0" : "#38bdf8"
+            )}
           >
             <Popup>
               <div className="font-mono text-xs">
@@ -616,8 +649,20 @@ export default function MapView({ route, result, shipment, options }) {
                   title="Click to view and highlight this route"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="route-choice-badge">
-                      {r.isWinner ? "⭐ BEST ROUTE" : `Option ${idx + 1}`}
+                    <span
+                      className={`route-choice-badge ${
+                        trafficIncident && r.isWinner
+                          ? "!text-red-300 !bg-red-500/20 !border-red-500/50"
+                          : ""
+                      }`}
+                    >
+                      {trafficIncident && r.isWinner
+                        ? "⛔ BLOCKED (PRIMARY)"
+                        : trafficIncident && isSelected
+                        ? "🟢 OPTION 2 · ACTIVE"
+                        : r.isWinner
+                        ? "⭐ BEST ROUTE"
+                        : `Option ${idx + 1}`}
                     </span>
                     <span
                       className={`route-freshness-pill ${
@@ -652,6 +697,34 @@ export default function MapView({ route, result, shipment, options }) {
 
       {/* Standard status pills */}
       <div className="map-legend">
+        {trafficIncident && (
+          <>
+            <span>
+              <i
+                style={{
+                  display: "inline-block",
+                  height: 4,
+                  width: 14,
+                  borderRadius: 4,
+                  background: "#ef4444",
+                }}
+              />{" "}
+              Primary Path (Blocked)
+            </span>
+            <span>
+              <i
+                style={{
+                  display: "inline-block",
+                  height: 4,
+                  width: 14,
+                  borderRadius: 4,
+                  background: "#22c55e",
+                }}
+              />{" "}
+              Option 2 Detour (Active)
+            </span>
+          </>
+        )}
         <span>
           <i
             style={{

@@ -101,6 +101,8 @@ def create_executive_summary(
         "cold_storage": "rerouted to a cold storage facility",
         "secondary_market": "rerouted to a secondary market",
         "flash_sale": "placed in a nearby flash sale",
+        "detour_traffic": "switched to Option 2, the alternative path around the blockage",
+        "replacement_vehicle": "transshipped to an alternative replacement vehicle",
         "continue": "the original route is continuing",
     }.get(action, "the shipment recovery plan was updated")
     return (

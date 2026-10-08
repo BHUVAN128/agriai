@@ -16,6 +16,7 @@ import {
   Thermometer,
   Tractor,
   Truck,
+  Wrench,
 } from "lucide-react";
 import { ackFarmerAlert, getFarmerAlerts } from "../services/api";
 
@@ -57,6 +58,15 @@ export default function FarmerDashboard({ onSwitchToFlashSales, latestSimulatedR
 
   const activeAlert = alerts.find((a) => a.status === "ACTIVE") || alerts[0];
 
+  // Scenario 3: Vehicle Mechanical Breakdown / Repair feed
+  const breakdownAlerts = alerts.filter(
+    (a) => a.status === "ACTIVE" && a.disruption_type === "breakdown"
+  );
+  const breakdownAlert = breakdownAlerts[0];
+  const replacementVehicle = breakdownAlert?.replacement_vehicle;
+  const breakdownCancelled =
+    breakdownAlert && breakdownAlert.quality_percent < 50;
+
   return (
     <div className="farmer-portal-container space-y-6">
       {/* Top Banner & Header */}
@@ -91,6 +101,131 @@ export default function FarmerDashboard({ onSwitchToFlashSales, latestSimulatedR
           <CheckCircle2 size={16} />
           <span>{actionSuccess}</span>
         </div>
+      )}
+
+      {/* VEHICLE BREAKDOWN & REPLACEMENT ALERTS (Scenario 3) */}
+      {breakdownAlert && (
+        <section className="p-5 rounded-2xl border bg-red-950/30 border-red-500/50 shadow-lg shadow-red-950/20">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse">
+                <Wrench size={22} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-red-900/70 text-red-100 border border-red-700/60 font-bold">
+                    Vehicle Breakdown
+                  </span>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30 font-bold">
+                    {breakdownAlert.status_badge || "Repair In Progress"}
+                  </span>
+                  <span className="text-[10px] text-neutral-500">
+                    {breakdownAlert.created_at}
+                  </span>
+                </div>
+                <h3 className="text-base font-semibold text-neutral-100 mt-1.5">
+                  {breakdownAlert.title}
+                </h3>
+                <p className="text-xs text-neutral-300 mt-1 max-w-3xl leading-relaxed">
+                  {breakdownAlert.description}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <span className="text-[10px] text-neutral-400 block font-mono">
+                BREAKDOWN CHECKPOINT
+              </span>
+              <strong className="text-sm font-mono text-white">
+                {breakdownAlert.checkpoint_name}
+              </strong>
+            </div>
+          </div>
+
+          {/* Replacement vehicle dispatch OR flash-sale cancellation */}
+          <div className="mt-4 pt-4 border-t border-red-900/50 grid grid-cols-1 md:grid-cols-2 gap-3">
+            {replacementVehicle && (
+              <div className="p-3.5 rounded-xl bg-black/40 border border-emerald-700/40">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-neutral-400 font-mono flex items-center gap-1.5">
+                    <Truck size={13} className="text-emerald-400" />
+                    ALTERNATIVE REPLACEMENT VEHICLE
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 font-bold">
+                    {replacementVehicle.status}
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-white mt-2">
+                  {replacementVehicle.id} · {replacementVehicle.name}
+                </h4>
+                <p className="text-[11px] text-neutral-400 mt-0.5">
+                  Driver: <strong className="text-neutral-200">{replacementVehicle.driver}</strong>{" "}
+                  · {replacementVehicle.phone} · Capacity {replacementVehicle.capacity_kg} kg
+                </p>
+                <div className="flex items-center gap-3 mt-2 pt-2 border-t border-neutral-800 text-[11px] font-mono">
+                  <span className="text-emerald-300 font-bold">
+                    ETA {replacementVehicle.eta_minutes} min
+                  </span>
+                  <span className="text-neutral-500">
+                    dispatched to {breakdownAlert.checkpoint_name}
+                  </span>
+                </div>
+                <p className="text-[10px] text-neutral-400 mt-2 leading-relaxed">
+                  Load will be transshipped and the original route continues with the relief vehicle.
+                </p>
+              </div>
+            )}
+
+            {breakdownCancelled && (
+              <div className="p-3.5 rounded-xl bg-black/40 border border-orange-600/50">
+                <div className="flex items-center gap-1.5">
+                  <Flame size={14} className="text-orange-400" />
+                  <span className="text-[10px] text-orange-300 font-mono font-bold">
+                    TRANSPORT CANCELLED · Q(t) {breakdownAlert.quality_percent?.toFixed(1)}% &lt; 50%
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-300 mt-2 leading-relaxed">
+                  Freshness collapsed below 50%: the batch has been pushed to the Restaurant
+                  Flash Sales Portal for an instant on-site sale at{" "}
+                  <strong className="text-white">{breakdownAlert.checkpoint_name}</strong>.
+                </p>
+                <button
+                  type="button"
+                  onClick={onSwitchToFlashSales}
+                  className="mt-3 px-3 py-1.5 text-[11px] rounded-lg bg-orange-600 hover:bg-orange-500 text-black border border-orange-400 font-bold flex items-center gap-1.5"
+                >
+                  <Flame size={12} />
+                  Open Flash Sale Listing
+                  <ExternalLink size={12} />
+                </button>
+              </div>
+            )}
+
+            {replacementVehicle && !breakdownCancelled && (
+              <div className="p-3.5 rounded-xl bg-black/40 border border-neutral-800 flex flex-col justify-center">
+                <span className="text-[10px] text-neutral-400 font-mono block mb-2">
+                  BREAKDOWN RESPONSE ACTIONS
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAction(breakdownAlert.id, "ACKNOWLEDGE")}
+                    className="px-2.5 py-1 text-[11px] rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 font-semibold"
+                  >
+                    Acknowledge Breakdown
+                  </button>
+                  <a
+                    href={`tel:${replacementVehicle.phone}`}
+                    className="px-2.5 py-1 text-[11px] rounded-lg bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 border border-emerald-600/40 font-semibold flex items-center gap-1"
+                  >
+                    <PhoneCall size={12} />
+                    Call Relief Driver
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
       )}
 
       {/* DISRUPTION ALERT BANNER (Prominent Top Alert) */}
@@ -262,7 +397,7 @@ export default function FarmerDashboard({ onSwitchToFlashSales, latestSimulatedR
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {trucks.map((truck) => {
-            const isDisrupted = truck.status === "DISRUPTED" || truck.status === "WARNING" || truck.status === "FLASH_SALE";
+            const isDisrupted = ["DISRUPTED", "WARNING", "FLASH_SALE", "BREAKDOWN", "DETOUR_ACTIVE", "REPLACEMENT_DISPATCHED"].includes(truck.status);
             return (
               <div
                 key={truck.id}

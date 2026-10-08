@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   Activity,
+  AlertTriangle,
   Award,
   CheckCircle2,
   ChevronRight,
@@ -15,6 +16,12 @@ import {
 } from "lucide-react";
 import { optimizeInitialRoute } from "../services/api";
 
+const DISRUPTION_TYPES = [
+  { value: "traffic", label: "Traffic Jam / Road Works" },
+  { value: "weather", label: "Weather & Container Temp Spikes (Quality Loss)" },
+  { value: "breakdown", label: "Vehicle Mechanical Breakdown" },
+];
+
 export default function Controls({
   options,
   shipment,
@@ -25,6 +32,8 @@ export default function Controls({
   setTemperature,
   nodeId,
   setNodeId,
+  disruptionType,
+  setDisruptionType,
   onGenerate,
   onSimulate,
   onOptimalRouteSelected,
@@ -220,6 +229,30 @@ export default function Controls({
         </div>
       </div>
 
+      {/* Disruption Type Selector */}
+      <label className="field-label">
+        <span>
+          <AlertTriangle size={14} /> Disruption type
+        </span>
+        <select
+          value={disruptionType}
+          onChange={(event) => setDisruptionType(event.target.value)}
+        >
+          {DISRUPTION_TYPES.map((type) => (
+            <option key={type.value} value={type.value}>
+              {type.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="text-[9px] text-neutral-500 font-mono leading-relaxed -mt-1">
+        {disruptionType === "traffic"
+          ? "→ OR-Tools invalidates the blocked segment · switches to Option 2 (Alternative Path) · badge: Detour Active"
+          : disruptionType === "weather"
+          ? "→ Q(t) 50–75%: reroute to Secondary Mandi · Q(t) < 50%: broadcast Flash Sale"
+          : "→ Q(t) > 75%: Replacement Vehicle · Q(t) < 50%: cancel transport + Flash Sale"}
+      </p>
+
       <label className="field-label slider-field">
         <span>
           Transit delay <b>{delay} min</b>
@@ -227,20 +260,20 @@ export default function Controls({
         <input
           type="range"
           min="0"
-          max="180"
+          max="360"
           step="5"
           value={delay}
           onChange={(event) => setDelay(Number(event.target.value))}
         />
         <span className="range-ends">
           <small>On time</small>
-          <small>3 hours</small>
+          <small>6 hours</small>
         </span>
       </label>
 
       <label className="field-label slider-field">
         <span>
-          Ambient temperature <b>{temperature}°C</b>
+          Ambient / container temperature <b>{temperature}°C</b>
         </span>
         <input
           type="range"
@@ -257,7 +290,7 @@ export default function Controls({
       </label>
 
       <label className="field-label">
-        <span>Incident checkpoint</span>
+        <span>Incident location / checkpoint</span>
         <select value={nodeId} onChange={(event) => setNodeId(event.target.value)}>
           {(options?.waypoints || []).map((node) => (
             <option key={node.id} value={node.id}>

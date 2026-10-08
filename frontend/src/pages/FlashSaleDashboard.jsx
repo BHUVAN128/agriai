@@ -68,6 +68,14 @@ export default function FlashSaleDashboard() {
   const activeDeals = deals.filter((d) => d.status === "ACTIVE");
   const claimedDeals = deals.filter((d) => d.status === "CLAIMED");
 
+  // Distress triggers: Q(t) < 50% quality collapse OR vehicle breakdown on-site sale
+  const qualityCollapseDeals = activeDeals.filter(
+    (d) => d.trigger === "quality_below_50" || (!d.trigger && d.quality_percent < 50)
+  );
+  const breakdownDeals = activeDeals.filter(
+    (d) => d.trigger === "breakdown_distress"
+  );
+
   return (
     <div className="flash-deals-container space-y-6">
       {/* Page Header */}
@@ -136,6 +144,42 @@ export default function FlashSaleDashboard() {
         </span>
       </div>
 
+      {/* DISTRESS TRIGGER SUMMARY (Q(t) < 50% & Breakdown) */}
+      {(qualityCollapseDeals.length > 0 || breakdownDeals.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {qualityCollapseDeals.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/40 flex items-start gap-3">
+              <AlertTriangle size={18} className="text-red-400 mt-0.5 shrink-0" />
+              <div>
+                <span className="text-[10px] font-mono font-bold text-red-300 uppercase block">
+                  Q(t) &lt; 50% Quality Collapse
+                </span>
+                <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                  {qualityCollapseDeals.length} batch{qualityCollapseDeals.length > 1 ? "es" : ""} breached
+                  the 50% freshness threshold from container-temperature spikes and transit delay —
+                  automatically broadcast to all restaurant buyers.
+                </p>
+              </div>
+            </div>
+          )}
+          {breakdownDeals.length > 0 && (
+            <div className="p-3.5 rounded-xl bg-orange-950/30 border border-orange-500/40 flex items-start gap-3">
+              <Truck size={18} className="text-orange-400 mt-0.5 shrink-0" />
+              <div>
+                <span className="text-[10px] font-mono font-bold text-orange-300 uppercase block">
+                  Breakdown Distress · On-Site Instant Sale
+                </span>
+                <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                  {breakdownDeals.length} immobilized batch{breakdownDeals.length > 1 ? "es" : ""} from
+                  a vehicle mechanical breakdown — transport cancelled, cargo pushed here for
+                  immediate on-site liquidation.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* DISTRESS DEALS GRID */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -169,6 +213,21 @@ export default function FlashSaleDashboard() {
                       <span className="inline-block text-[10px] font-mono px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30 font-bold uppercase mb-1.5">
                         {deal.discount_percent}% OFF FLASH SALE
                       </span>
+                      {(deal.trigger === "breakdown_distress" ||
+                        deal.trigger === "quality_below_50" ||
+                        deal.quality_percent < 50) && (
+                        <span
+                          className={`inline-block ml-1 text-[9px] font-mono px-2 py-0.5 rounded font-bold uppercase mb-1.5 border ${
+                            deal.trigger === "breakdown_distress"
+                              ? "bg-red-500/20 text-red-300 border-red-500/40"
+                              : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                          }`}
+                        >
+                          {deal.trigger === "breakdown_distress"
+                            ? "⚠ Breakdown Distress"
+                            : "Q(t) < 50%"}
+                        </span>
+                      )}
                       <h4 className="text-lg font-bold text-white">
                         {deal.quantity_kg} kg {deal.produce_type}
                       </h4>
@@ -176,6 +235,11 @@ export default function FlashSaleDashboard() {
                         <Truck size={13} className="text-[#b3e875]" />
                         <span>Vehicle {deal.truck_id} · {deal.driver_name}</span>
                       </p>
+                      {deal.distress_reason && (
+                        <p className="text-[10px] text-orange-200/80 mt-1.5 leading-relaxed">
+                          {deal.distress_reason}
+                        </p>
+                      )}
                     </div>
 
                     <div className="text-right">

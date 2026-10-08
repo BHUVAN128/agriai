@@ -16,7 +16,7 @@ import Controls from "./components/Controls.jsx";
 import MapView from "./components/MapView.jsx";
 import MetricsCard from "./components/MetricsCard.jsx";
 import Navbar from "./components/Navbar.jsx";
-import VoiceUI from "./components/VoiceUI.jsx";
+import DriverVoiceUI from "./components/DriverVoiceUI.jsx";
 import FarmerDashboard from "./pages/FarmerDashboard.jsx";
 import FlashSaleDashboard from "./pages/FlashSaleDashboard.jsx";
 import {
@@ -26,6 +26,7 @@ import {
   getFlashDeals,
   getOptions,
   sendVoiceCommand,
+  sendDriverVoiceCommand,
   simulateIncident,
 } from "./services/api.js";
 
@@ -45,6 +46,7 @@ function App() {
   const [delay, setDelay] = useState(90);
   const [temperature, setTemperature] = useState(34);
   const [nodeId, setNodeId] = useState("Node_P2");
+  const [disruptionType, setDisruptionType] = useState("traffic");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [alertCount, setAlertCount] = useState(1);
@@ -132,6 +134,7 @@ function App() {
         delay_mins: delay,
         temp_celsius: temperature,
         node_id: nodeId,
+        disruption_type: disruptionType,
       });
       setResult(simulated);
       refreshBadgeCounts();
@@ -168,6 +171,26 @@ function App() {
       setTemperature(response.incident.temp_celsius);
       setNodeId(response.incident.node_id);
       refreshBadgeCounts();
+      return response;
+    } catch (issue) {
+      setError(issue.message);
+      throw issue;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function runDriverVoiceCommand(text) {
+    setLoading(true);
+    try {
+      const response = await sendDriverVoiceCommand(text, shipment);
+      if (response.incident) {
+        setResult(response.incident);
+        setDelay(response.incident.delay_mins);
+        setTemperature(response.incident.temperature_celsius);
+        setNodeId(response.incident.incident_node?.id || nodeId);
+        refreshBadgeCounts();
+      }
       return response;
     } catch (issue) {
       setError(issue.message);
@@ -266,12 +289,14 @@ function App() {
                 setTemperature={setTemperature}
                 nodeId={nodeId}
                 setNodeId={setNodeId}
+                disruptionType={disruptionType}
+                setDisruptionType={setDisruptionType}
                 onGenerate={generateRoute}
                 onSimulate={runSimulation}
                 onOptimalRouteSelected={handleOptimalRouteSelected}
                 loading={loading}
               />
-              <VoiceUI onCommand={runVoiceCommand} busy={loading} />
+              <DriverVoiceUI onCommand={runDriverVoiceCommand} busy={loading} />
             </div>
 
             <section className="panel map-panel">
@@ -296,7 +321,9 @@ function App() {
                 >
                   <i />{" "}
                   {result
-                    ? result.route_status.replace("_", " ")
+                    ? result.status_badge ||
+                      result.decision?.status_badge ||
+                      result.route_status.replace("_", " ")
                     : route
                     ? "ROUTE ACTIVE"
                     : "AWAITING ROUTE"}
@@ -365,6 +392,19 @@ function App() {
                         >
                           View in Flash Deals Portal →
                         </button>
+                      </div>
+                    )}
+                    {result.replacement_vehicle && (
+                      <div className="recovery-details flex flex-wrap items-center gap-2">
+                        <span>RELIEF VEHICLE</span>
+                        <span>
+                          {result.replacement_vehicle.id} ·{" "}
+                          {result.replacement_vehicle.name}
+                        </span>
+                        <span>
+                          ETA {result.replacement_vehicle.eta_minutes} min ·{" "}
+                          {result.replacement_vehicle.status}
+                        </span>
                       </div>
                     )}
                     {result.decision.destination && (
